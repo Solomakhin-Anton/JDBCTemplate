@@ -1,27 +1,23 @@
-# Spring MVC (first application)
+# Spring MVC (SpringConfig.java)
 
 ## Задание
 
-![1](images/1.png)
+1. Сделать конфигурацию Spring MVC-приложения с помощью java-кода
 
 ## Решение
-_плагин возможно установить только на платной версии, есть варианты подключения плагина через pom.xml и запцуск сервера через консоль_
-
-1. Устанавливаем Tomcat http://tomcat.apache.org/
-2. Указываем путь к скаченной разархивированной папке в среде разработки: Run -> Edit Configurations -> "+" -> Tomcat Server -> Local -> Application server -> Configure -> "+" -> Tomcat Home -> Выбираем директорию -> Fix -> :war exploded -> Application context -> " ". (Я поменял хост с 8080 на 8090 из-за селеноида на этом порту).
-3. Запускаем сервер: Run -> Run -> Tomcat.
-4. При первом запуске появляется "Error running".
-5. Открываем терминал -> переходим в папку, где находится Tomcat-сервер -> `cd bin` -> мы не дали права на исполнение файла catalina.sh -> `chmod +x catalina.sh`.
-6. Заново повторяем шаг 3 - `Artifact SpringMVC:war exploded: Artifact is deployed successfully`.
-7. Добавляем зависимости в pom.xml - для Spring Core, Spring MVC и шаблонизатора Thymeleaf.
-8. В pom.xml мы вынесли версию Spring в отдельную переменную `spring.version` в теге `<properties>` и указывали у зависимостей эту переменную.
-9. Далее реализуем файл web.xml.
-10. Файл web.xml считывается сервером (Tomcat), поэтому в нем описываем то, что хотим, чтобы сервер делал. Сейчас хотим, чтобы все HTTP-запросы сервер отправлял на DispatcherServlet, чтобы он уже "правильно" подбирал контроллеры для запросов.
-11. С помощью тега `<servlet>` создаем наш DispatcherServlet. `<servlet-class>` берется из библиотеки Spring'а, он уже реализован за нас. `<param-value>` - путь до файла, где находится Spring-конфигурация. `<load-on-startup>` указывает, что DispatcherServlet надо запускать в первую очередь. С помощью `<servlet-mapping>` мы обращаемся к нашему DispatcherServlet и  говорим, что любой url (`<url-pattern>`), который набирает пользователь, должен направляться на DispatcherServlet.
-12. Создаем applicationContextMVC.xml.
-13. `<mvc:annotation-driven>` включает необходимые аннотации для Spring MVC-приложения.
-14. Три бина для того, чтобы работал шаблонизатор Thymeleaf. В первом `value` отвечает за то, где лежат шаблоны и какое расширение будет (`.html`). Это позволяет в контроллере обращаться к шаблонам напрямую, не указывая путь и расширение.
-15. Создадим контроллер и пометим аннотацией `@Controller` - HelloController.java.
-16. Создадим метод `sayHello()`, над ним указываем аннотацию `@GetMapping`, у которой в скобках указываем, какой url будет приходить в этот метод котроллера. Метод возвращает представление.
-17. Создаем представление `hello_world` - views.hello-world.html.
-18. Перезапускаем сервер (в IDEA): Services -> Refresh (значок) -> Redeploy, либо Stop (значок) -> Run (значок).
+1. Будем заменять файлы `web.xml` и `applicationContext.xml` на java-классы.
+2. Начиная с 3 версии Spring Framework можно использовать Java-код вместо `web.xml`. Для этого необходимо в проекте создать класс, который реализует интерфейс `org.springframework.web.WebApplicationInitializier`. Такой класс считывается автоматически и работает как `web.xml`.
+3. В классе, заменяющем `web.xml`, должен быть перезаписанный метод `onStartup`, в котором будет код, заменяющий код в `web.xml`.
+4. Но мы будем использовать другой метод замены `web.xml` - абстрактный  класс, который реализует интерфейс `WebApplicationInitializier` за нас.
+5. Создаем класс, которым заменяем `web.xml` - `MySpringMVCDispatcherServletInitializer`, который должен наследоваться от абстрактного класса `AbstractAnnotationConfigDispatcherServletInitializer`.
+6. Имплементируем все методы этого класса (правая клавиша - implement methods): ![methods](images/2.png).
+7. В этих методах должны передать конфигурацию (11 пункт).
+8. Создаем класс, заменяющий `applicationContext.xml` - `SpringConfig` с необходимыми аннотациями + `@EnableWebMVC`, так как создаем приложение, которое поддерживает веб-функции (она равнозначна `<mvc:annotation-driven/>`, которая была в `applicationContext.xml`).
+9. В `SpringConfig` реализуем бины, которые отвечали за реализацию шаблонизатора. 
+10. Мы реализуем интерфейс `WebMvcConfigurer` через `SpringConfig`, и вместе с этим  реализуем метод `configureViewResolvers`. Этот интерфейс реализуется тогда, когда мы хотим под себя настроить Spring MVC, и в данном случае мы хотим вместо сандарттного шаблонизатора использовать Thymeleaf. Поэтому в упомянутом методе мы задаем шаблонизатор. Также внедряем applicationContext - он будет внедрен самим Spring'ом за нас. Этот applicationContext мы используем в бине `templateResolver`, задаем папку, где лежат представления, и расширение представлений. С помощью бина `templateEngine` производим конфигурацию наших представлений.
+11. Возвращаемся в `MySpringMVCDispatcherServletInitializer` и теперь поставим недостоющие значения:
+- `getRootConfigClasses` использовать не будем - меняем на `return null`;
+- в `getServletConfigClasses` должны подставить конфигурационный класс `SpringConfig` - `return new Class[] {SpringConfig.class}`;
+- в `getServletMappings` прописываем `return new String[] {"/"}` - это все HTTP-запросы от пользователя посылаем на DispatcherServlet.
+12. Осталось добавить одну зависимость - `Java Servlet API` - она используется абстрактным классом, интерфейс которого мы реализовали в `MySpringMVCDispatcherServletInitializer`.
+13. Удаляем xml-файлы и запускаем сервер.
