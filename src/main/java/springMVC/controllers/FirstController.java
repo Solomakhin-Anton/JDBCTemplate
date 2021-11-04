@@ -1,47 +1,58 @@
 package springMVC.controllers;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Locale;
 
 @Controller
 @RequestMapping("/first")
 public class FirstController {
 
-    /*
-    Первый вариант - HttpServletRequest
-     */
-//    @GetMapping("/hello")
-//    public String helloPage(HttpServletRequest request) {
-//        String name = request.getParameter("name");
-//        String surname = request.getParameter("surname");
-//
-//        System.out.println("Hello, " + name + " " + surname);
-//
-//        return "first/hello";
-//    }
-
-    /*
-    Второй вариант - @RequestParam
-     */
     @GetMapping("/hello")
-    public String helloPage(@RequestParam("name") String name,
-                            @RequestParam("surname") String surname) {
+    public String helloPage(@RequestParam(value = "name", required = false) String name,
+                            @RequestParam(value = "surname", required = false) String surname,
+                            Model model) {
 
-        System.out.println("Hello, " + name + " " + surname);
+        model.addAttribute("message", "Hello, " + name + " " + surname);
 
         return "first/hello";
     }
 
     @GetMapping("/goodbye")
-    public String goodbyePage(@RequestParam(value = "name", required = false) String name,
-                              @RequestParam(value = "surname", required = false) String surname) {
-
-        System.out.println("Hello, " + name + " " + surname);
-
+    public String goodbyePage() {
         return "first/goodbye";
+    }
+
+    @GetMapping("/calculate")
+    public String calculator(HttpServletRequest request,
+                             Model model) throws Exception {
+        int a = Integer.parseInt(request.getParameter("a"));
+        int b = Integer.parseInt(request.getParameter("b"));
+        String action = request.getParameter("action").toLowerCase();
+        double result;
+        switch (action) {
+            case "multiplication":
+                result = a * b;
+                break;
+            case "division":
+                result = a / (double)b;
+                break;
+            case "suntraction":
+                result = a - b;
+                break;
+            case "addition":
+                result = a + b;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + action);
+        }
+
+        model.addAttribute("result", result);
+        return "first/calculate";
     }
 }
