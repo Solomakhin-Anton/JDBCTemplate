@@ -3,10 +3,12 @@ package springMVC.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import springMVC.dao.PersonDAO;
 import springMVC.models.Person;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Controller
@@ -46,13 +48,13 @@ public class PeopleController {
 //    }
 
     @PostMapping()
-    public String create(@ModelAttribute("person") Person person) {
-        // Добавление в БД нового человека
-        personDAO.save(person);
+    public String create(@ModelAttribute("person") @Valid Person person,
+                         BindingResult bindingResult) {
+        // Если в объекте есть ошибки - возвращаем снова форму /people/new
+        if (bindingResult.hasErrors()) return "people/new";
 
+        personDAO.save(person);
         return "redirect:/people";
-        // Когда человек будет добавлен в БД, мы отправим браузеру строку "redirect:/people",
-        // он увидит, что нужно совершить переход на другую страницу - /people
     }
 
     @GetMapping("/{id}/edit")
@@ -62,7 +64,10 @@ public class PeopleController {
     }
 
     @PatchMapping("/{id}")
-    public String update(@ModelAttribute("person") Person person, @PathVariable("id") int id) {
+    public String update(@ModelAttribute("person") @Valid Person person, BindingResult bindingResult,
+                         @PathVariable("id") int id) {
+        if(bindingResult.hasErrors()) return "people/edit";
+
         personDAO.update(id, person);
         return "redirect:/people";
     }
