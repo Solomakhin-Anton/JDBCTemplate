@@ -27,4 +27,10 @@ public class PersonDAO {
         // Лямбда - выражение: среди people ищем человека с id == id на входе, если нет - возвращаем null
         return people.stream().filter(person -> person.getId() == id).findAny().orElse(null);
     }
+
+    public void save(Person person) {
+        // Динамически генерирует id при добавлении в БД
+        person.setId(++PEOPLE_COUNT);
+        people.add(person);
+    }
 }
