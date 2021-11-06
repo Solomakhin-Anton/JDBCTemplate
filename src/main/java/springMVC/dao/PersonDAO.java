@@ -33,4 +33,14 @@ public class PersonDAO {
         person.setId(++PEOPLE_COUNT);
         people.add(person);
     }
+
+    public void update(int id, Person updatedPerson) {
+        Person personToBeUpdated = show(id);
+        personToBeUpdated.setName(updatedPerson.getName());
+    }
+
+    public void delete(int id) {
+        // Лямбда-выражение: проходимся по каждому человеку из списка, находим его id, если id равен тому id, который пришел в качестве аргумента, то этот элемент удаляется из списка
+        people.removeIf(p -> p.getId() == id);
+    }
 }
