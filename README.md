@@ -1,63 +1,31 @@
-# Spring MVC (JDBC API. Базы данных)
+# Spring MVC (SQL инъекции. PreparedStatement. JDBC API)
 
-Реалиционные БД - БД, которые хранят данные в виде таблиц.
-Используем PostgreSQL, она более "навороченная", чем MySQL.
-Для использования другой реляционной БД нужен будет другой JDBC драйвер).
-Есть несколько спсобов связи Java-приложения с БД:
-![DB](images/50.png)
-![DB](images/51.png)
-
-Базовые SQL-команды:
-![SQL](images/52.png)
-
-Проблема JDBC - любая ошибка (подключение к БД, связь и т.п.) будет SQLException.
+![SQL](images/57.png)
+SQL инъекция - один из самых распространенных способов взлома сайтов и программ, работающих с БД.
+Так как строки из HTML формы напрямую конкатенируются в SQL запросе, злоумышленник может подобрать такую строку, которая нанесет вред.
+Например, при вводе email введется `test@mail.ru'); DROP TABLE Person; --`, получится `INSERT INTO Person VALUES (1, 'test', 15, 'test@mail.ru'); DROP TABLE Person; --')` и таблица удалится.
+`--` в SQL == `//` в Java.
+![PS](images/58.png)
+Если опять в качестве email введем строку `test@mail.ru'); DROP TABLE Person; --`, то вся эта строка будет помещена как email.
+![PS](images/59.png)
+![PS](images/60.png)
 
 ## Задание
 
-1. Подключим БД к проекту через JDBC.
+1. Решим проблему SQL инъекции с помощью класса PreparedStatement.
+2. Перепишем метод `save` и реализуем оставшиеся методы в DAO.
 
 ## Решение
 
-1. Устанавливаем БД.
-2. Подключаем БД в IDEA:
-   - нажимаем в IDEA на вкладку Database ![DB](images/53.png)
-   - жмем "+" -> Data Source -> PostgreSQL -> вводим данные (host, user, password, database(имя)) -> Test Connection -> если ок -> Копирует строку URL -> Ok
-3. В console создадим новую таблицу, после сверху слева жмем зеленый треугольниу (Execute) 
-   `create table Person(`
-   `  id int,`
-   `  name varchar,`
-   `  age int,`
-   `  email varchar`
-   `)`
-4. Добавляем людей в таблицу в console
-   `insert into person values(1, 'Tom', 18, 'tom@mail.ru')`
-5. Для проверки добавления введем `select * from person` и нажмем Execute.
-6. Добавляем еще троих 
-   `insert into person values(2, 'Bob', 28, 'bob@mail.ru');`
-   `insert into person values(3, 'Mike', 38, 'mike@mail.ru');`
-   `insert into person values(4, 'Katy', 22, 'katy@mail.ru');`
-   - при добавлении нескольких нужно  выделить все строки и нажать Execute.
-7. Подключаем зависимость `PostgreSQL JDBC Driver`.
-8. Перейдем в DAO и запишем url, name и password (лучше это делать в файле `.properties`).
-9. Создаем Connection для БД.
-10. `Class.forName("org.postgresql.Driver");` - подгружаем драйвер.
-11. Реализуем методы `index` и `save` в DAO.
-12. Объект `Statement` - тот  объект, который содержит в  себе SQL-запрос к БД.
-13. `statement.executeQuery` - для выполнения на нашем стейтменте SQL-запросаю
-14. Возвращается несколько строк из БД - `ResultSet` принимает их.
-15. Проходимся по строкам и вручную переводим в Java-объект.
-16. Получили все данные с помощью `resultSet.getInt` и `resultSet.getString`, с помощью сеттеров установили значения новому созданному объекту `Person`, теперь добавляем этого человека в список `people`.
-17. Запускаем приложение ![people](images/54.png)
-18. Реализуем добавление людей в методе `save`.
-19. В этот раз делаем запрос и указываем в строку все, что в скобках у `VALUES`, но так делать не надо.
-20. Запускаем приложение:
-    - `/people/new` ![new](images/55.png);
-    - Жмем `Create!` - `/people` ![people](images/56.png)
-
-### Примечания из комментариев
-
-1. ResultSet и Connection в конце надо закрывать
-2. Для MySQL зависимость называется - MySQL Connector/J, `Class.forName("com.mysql.jdbc.Driver")`
-3. Разве надо обрабатывать исключения в DAO? Не лучше ли пробросить их в модель и там формировать соответствующий view если, например, отвалилась БД?
-4. А разве связь с базой в Spring не должен работать через services layer? Я видел что создаётся DAO интерфейсы потом реализация. Потом создают services. Services расширяют реализацию дао и создают Connection и работают с базой непосредственно. Service -> DAO -> DataBase. - да, должен. Просто я не хочу все сразу давать в одном уроке. Дойдем и до сервисов. 
-5. 
+1. Метод `index` переписывать не будем, так как в нем мы не берем данные от  пользователя и не вносим изменений в БД.
+2. Перепишем метод `save`.
+3. Реализуем методы `show`, `update` и `delete`.
+4. Запускаем приложение:
+   - `/people` - ![people](images/61.png)
+   - `/people/new` - ![new](images/62.png)
+   - жмем `Create!` - `/people` - ![people](images/63.png)
+   - `/people/1` - ![Tom](images/64.png)
+   - `/people/1/edit` - ![edit](images/65.png)
+   - жмем `Update!` - `/people` - несколько человек обновилось (у кого id = 1), так как захардкодили id - ![people](images/66.png)
+   - `/people/1` -> `Delete` - `/people` - ![delete](images/67.png)
+   - 

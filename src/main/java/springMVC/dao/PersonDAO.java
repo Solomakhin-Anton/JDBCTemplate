@@ -57,32 +57,67 @@ public class PersonDAO {
         return people;
     }
 
-//    public Person show(int id){
-//        // Лямбда - выражение: среди people ищем человека с id == id на входе, если нет - возвращаем null
-//        return people.stream().filter(person -> person.getId() == id).findAny().orElse(null);
-//    }
+    public Person show(int id){
+        Person person = null;
+        try {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("SELECT * FROM Person WHERE id = ?");
+            preparedStatement.setInt(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            // В данном примере в resultSet'е несколько строк будет, так как id мы харкожим
+            // Будем выводить только первый найденный вариант
+            // Перещаем указатель один раз вперед, он будет указывать на первую строчку, которуюмыполучили из БД
+            resultSet.next();
+            person = new Person();
+
+            person.setId(resultSet.getInt("id"));
+            person.setName(resultSet.getString("name"));
+            person.setEmail(resultSet.getString("email"));
+            person.setAge(resultSet.getInt("age"));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return person;
+    }
 
     public void save(Person person) {
         try {
-            Statement statement = connection.createStatement();
-            String SQL = "INSERT INTO Person VALUES(" + 1 + ",'" + person.getName() + "'," +
-                    person.getAge() + ",'" + person.getEmail() + "')";
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("INSERT INTO Person VALUES(1, ?, ?, ?)");
+            preparedStatement.setString(1, person.getName());
+            preparedStatement.setInt(2, person.getAge());
+            preparedStatement.setString(3, person.getEmail());
 
-            statement.executeUpdate(SQL);
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-//    public void update(int id, Person updatedPerson) {
-//        Person personToBeUpdated = show(id);
-//        personToBeUpdated.setName(updatedPerson.getName());
-//        personToBeUpdated.setAge(updatedPerson.getAge());
-//        personToBeUpdated.setEmail(updatedPerson.getEmail());
-//    }
+    public void update(int id, Person updatedPerson) {
+        try {
+            PreparedStatement preparedStatement=
+                    connection.prepareStatement("UPDATE Person SET name=?, age=?, email=? WHERE id=?");
+            preparedStatement.setString(1, updatedPerson.getName());
+            preparedStatement.setInt(2, updatedPerson.getAge());
+            preparedStatement.setString(3, updatedPerson.getEmail());
+            preparedStatement.setInt(4, id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
-//    public void delete(int id) {
-//        // Лямбда-выражение: проходимся по каждому человеку из списка, находим его id, если id равен тому id, который пришел в качестве аргумента, то этот элемент удаляется из списка
-//        people.removeIf(p -> p.getId() == id);
-//    }
+    }
+
+    public void delete(int id) {
+        try {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("DELETE FROM Person WHERE id=?");
+            preparedStatement.setInt(1, id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
